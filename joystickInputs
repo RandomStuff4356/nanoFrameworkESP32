@@ -14,8 +14,8 @@ int min = adc.MinValue;
 var gpioController = new GpioController();
 
 //Canais do Joystick
-AdcChannel cnlY = adc.OpenChannel(6);
-AdcChannel cnlX = adc.OpenChannel(7);
+AdcChannel cnlY = adc.OpenChannel(6);//Pino 34
+AdcChannel cnlX = adc.OpenChannel(7);//Pino 35
 
 //Pinos dos motores
 GpioPin mEsq1 = gpioController.OpenPin(27, PinMode.Output);

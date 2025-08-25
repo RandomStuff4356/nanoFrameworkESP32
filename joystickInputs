@@ -1,0 +1,70 @@
+//Programa utilizando Joystick HW-504
+using System;
+using System.Device.Gpio;
+using System.Diagnostics;
+using System.Threading;
+using System.Device.Adc;
+using System.Diagnostics.CodeAnalysis;
+
+//Setup do Adc e GPIO
+AdcController adc = new AdcController();
+int max = adc.MaxValue;
+int min = adc.MinValue;
+//4095
+var gpioController = new GpioController();
+
+//Canais do Joystick
+AdcChannel cnlY = adc.OpenChannel(6);
+AdcChannel cnlX = adc.OpenChannel(7);
+
+//Pinos dos motores
+GpioPin mEsq1 = gpioController.OpenPin(27, PinMode.Output);
+GpioPin mEsq2 = gpioController.OpenPin(33, PinMode.Output);
+GpioPin mDir1= gpioController.OpenPin(2, PinMode.Output);
+GpioPin mDir2 = gpioController.OpenPin(4, PinMode.Output);
+
+//Velocidades dos motores
+int velReta = 220, velCurva = 300;
+
+//Guarda o movimento atual
+string estado = "";
+
+//Guarda o struct do joystick
+joystick j;
+while (true)
+{
+    lerSensores();
+}
+
+void lerSensores()
+{
+    j = new joystick(cnlX.ReadValue(), cnlY.ReadValue());
+    estado = definirEstado();
+    Debug.WriteLine($"X: {j.X} | Y: {j.Y} | Estado: {estado}");
+}
+
+string definirEstado()
+{
+    if (j.X < 2200 && j.X > 1500 && j.Y < 2200 && j.Y > 1500) return "neutro";
+    else if (j.X < 1000 && j.Y > 2000 && j.Y < 4000) return "frente";
+    else if (j.X > 2000 && j.Y < 2200 && j.Y > 1500) return "tras";
+    else if (j.Y < 1000 && j.X > 1000 && j.X < 4000) return "esquerda";
+    else if (j.X > 1000 && j.X < 4000 && j.Y > 2000) return "direita";
+    else if (j.X < 1000 && j.Y < 1000) return "diagFE";
+    else if (j.X < 1000 && j.Y > 2000) return "diagFD";
+    else if (j.X > 2000 && j.Y < 1000) return "diagTE";
+    else if (j.X > 2000 && j.Y > 2000) return "diagTD";
+    else return estado;
+    
+}
+
+public struct joystick
+{
+    public int X { get; set; }
+    public int Y { get; set; }
+    public joystick(int Yc, int Xc)
+    {
+        X = Xc;
+        Y = Yc;
+    }
+}

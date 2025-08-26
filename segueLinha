@@ -1,0 +1,114 @@
+using System;
+using System.Device.Gpio;
+using System.Diagnostics;
+using System.Threading;
+using System.Device.Adc;
+
+GpioController gpio = new GpioController();
+
+AdcController adc = new AdcController();
+
+AdcChannel sensorEsq = adc.OpenChannel(6);
+AdcChannel sensorCen = adc.OpenChannel(7);
+AdcChannel sensorDir = adc.OpenChannel(8);
+
+GpioPin mEsq1 = gpio.OpenPin(33, PinMode.Output);
+GpioPin mEsq2 = gpio.OpenPin(27, PinMode.Output);
+GpioPin mDir1 = gpio.OpenPin(2, PinMode.Output);
+GpioPin mDir2 = gpio.OpenPin(4, PinMode.Output);
+
+int velReta = 200, velCurva = 400, corte = 2000;
+
+//Array para armazenar as leituras dos sensores
+string[] ls = new string[3];
+int[] polaridades = new int[3];//Polaridades dos sensores, 0 maior número indica branco, 1 maior número indica preto
+string estado = "!", estadoAnterior = "!";
+
+while (true)
+{
+    lerSensores();
+}
+
+void lerSensores()
+{
+    ls[0] = definirCor(sensorEsq.ReadValue());
+    ls[1] = definirCor(sensorCen.ReadValue());
+    ls[2] = definirCor(sensorDir.ReadValue());
+
+    estado = definirEstado();
+
+    Console.WriteLine($"Esquerda: {ls[0]} | Centro: {ls[1]} | Direita: {ls[2]} | Estado: {estado}");
+}
+
+string definirCor(int input)
+{
+    if (input < corte)
+    {
+        return "Branco";
+    }
+    else
+    {
+        return "Preto";
+    }
+}
+
+string definirEstado()
+{
+    if (ls[0] == "Preto" && ls[1] == "Preto" && ls[2] == "Preto")
+    {
+        return "cruz";
+    }
+    else if (ls[1] == "Branco")
+    {
+        return "gap";
+    }
+    else return estado;
+}
+
+void lopenFrente(int time)
+{
+    mEsq1.Write(velReta);
+    mEsq2.Write(PinValue.Low);
+    mDir1.Write(velReta);
+    mDir2.Write(PinValue.Low);
+    Thread.Sleep(time);
+    parar();
+}
+
+void lopenTras(int time)
+{
+    mEsq1.Write(PinValue.Low);
+    mEsq2.Write(velReta);
+    mDir1.Write(PinValue.Low);
+    mDir2.Write(velReta);
+    Thread.Sleep(time);
+    parar();
+}
+
+void lopenDir(int time)
+{
+    mEsq1.Write(velCurva);
+    mEsq2.Write(PinValue.Low);
+    mDir1.Write(PinValue.Low);
+    mDir2.Write(velCurva);
+    Thread.Sleep(time);
+    parar();
+}
+
+void lopenEsq(int time)
+{
+    mEsq1.Write(PinValue.Low);
+    mEsq2.Write(velCurva);
+    mDir1.Write(velCurva);
+    mDir2.Write(PinValue.Low);
+    Thread.Sleep(time);
+    parar();
+}
+
+void parar()
+{
+    mEsq1.Write(PinValue.Low);
+    mEsq2.Write(PinValue.Low);
+    mDir1.Write(PinValue.Low);
+    mDir2.Write(PinValue.Low);
+}

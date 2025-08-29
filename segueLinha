@@ -73,12 +73,43 @@ string definirEstado()
     }
     else if (ls[1] == "Preto")
     {
-        return "gap";
+        if (ls[0] == "Preto") return "90Esq";
+        else if (ls[2] == "Preto") return "90Dir";
+        else return estadoAnterior;
     }
     else return estado;
    // estadoAnterior = estado;
 
 }
+
+void seguirLinha()
+{
+    if (estado == "cruz")
+    {
+        lopenFrente(1000);
+    }
+    else if (estado == "90Esq")
+    {
+        lopenEsq(500);
+    }
+    else if (estado == "90Dir")
+    {
+        lopenDir(500);
+    }
+    else if (estado == "corrigirEsq")
+    {
+        lopenEsq(200);
+    }
+    else if (estado == "corrigirDir")
+    {
+        lopenDir(200);
+    }
+    else if (estado == "gap")
+    {
+        lopenFrente(500);
+    }
+}
+
 void lopenFrente(int time)
 {
     mEsq1.Write(velReta);

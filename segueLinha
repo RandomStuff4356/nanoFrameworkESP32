@@ -1,38 +1,72 @@
 using System;
 using System.Device.Gpio;
-using System.Diagnostics;
+using nanoFramework.Hardware.Esp32;
 using System.Threading;
 using System.Device.Adc;
+using System.Device.Pwm;
+using System.Diagnostics;
 
 GpioController gpio = new GpioController();
 
 AdcController adc = new AdcController();
 
-AdcChannel sensorEsq = adc.OpenChannel(6);
-AdcChannel sensorCen = adc.OpenChannel(7);
-AdcChannel sensorDir = adc.OpenChannel(3);
+Configuration.SetPinFunction(27, DeviceFunction.PWM3);
+Configuration.SetPinFunction(14, DeviceFunction.PWM3);
+Configuration.SetPinFunction(4, DeviceFunction.PWM3);
+Configuration.SetPinFunction(2, DeviceFunction.PWM3);
 
-GpioPin mEsq1 = gpio.OpenPin(33, PinMode.Output);
-GpioPin mEsq2 = gpio.OpenPin(27, PinMode.Output);
+AdcChannel sensorEsq = adc.OpenChannel(6);//GPIO 34
+AdcChannel sensorCen = adc.OpenChannel(7);//GPIO 35
+AdcChannel sensorDir = adc.OpenChannel(3);//GPIO 39
+
+GpioPin mEsq1 = gpio.OpenPin(27, PinMode.Output);
+GpioPin mEsq2 = gpio.OpenPin(14, PinMode.Output);
 GpioPin mDir1 = gpio.OpenPin(4, PinMode.Output);
 GpioPin mDir2 = gpio.OpenPin(2, PinMode.Output);
 
-int velReta = 200, velCurva = 400, corte = 2000;
+double velReta = 0.4, velCurva = 0.50;
+int corte = 2000;
 
 //Array para armazenar as leituras dos sensores
 string[] ls = new string[3];
 bool[] polaridades = new bool[3];//Polaridades dos sensores, 0 maior número indica branco, 1 maior número indica preto
 string estado = "!", estadoAnterior = "!";
 
-polaridades[0] = true;
-polaridades[1] = false;
-polaridades[2] = true;
+polaridades[0] = false;
+polaridades[1] = true;
+polaridades[2] = false;
 
 while (true)
 {
-    lopenFrente(2000);
-    Thread.Sleep(5000);
+    if (mEsq1 != null && mEsq2 != null && mDir1 != null && mDir2 != null)
+    {
+      lerSensores();
+      seguirLinha();
+    }
+    else
+    {
+        if(mEsq1 == null) Debug.WriteLine("mEsq1 nulo"); mEsq1 = gpio.OpenPin(27);
+        if (mEsq2 == null) Debug.WriteLine("mEsq2 nulo"); mEsq2 = gpio.OpenPin(14);
+        if (mDir1 == null) Debug.WriteLine("mDir1 nulo"); mDir1 = gpio.OpenPin(4);
+        if (mDir2 == null) Debug.WriteLine("mDir2 nulo"); mDir2 = gpio.OpenPin(2);
+    }
 }
+
+//void startCnls()
+//{
+//    mEsq1.Start();
+//    mEsq2.Start();
+//    mDir1.Start();
+//    mDir2.Start();
+//}
+
+//void stopCnls()
+//{
+//    mEsq1.Stop();
+//    mEsq2.Stop();
+//    mDir1.Stop();
+//    mDir2.Stop();
+//}
 
 void lerSensores()
 {
@@ -42,7 +76,7 @@ void lerSensores()
 
     estado = definirEstado();
 
-    Console.WriteLine($"Esquerda: {ls[0]} | Centro: {ls[1]} | Direita: {sensorDir.ReadValue()} | Estado: {estado}");
+    Console.WriteLine($"Esquerda: {ls[0]} | Centro: {ls[1]} | Direita: {ls[2]} | Estado: {estado}");
 }
 
 string definirCor(int input, int indice)
@@ -69,21 +103,22 @@ string definirEstado()
     {
         if (ls[0] == "Preto") return "corrigirEsq";
         else if (ls[2] == "Preto") return "corrigirDir";
-        else return estadoAnterior;
+        else return "gap";
     }
     else if (ls[1] == "Preto")
     {
         if (ls[0] == "Preto") return "90Esq";
         else if (ls[2] == "Preto") return "90Dir";
-        else return estadoAnterior;
+        else return "cruz";
     }
-    else return estado;
-   // estadoAnterior = estado;
 
+    else return estadoAnterior;
+    estadoAnterior = estado;
 }
 
 void seguirLinha()
 {
+    //startCnls();
     if (estado == "cruz")
     {
         lopenFrente(1000);
@@ -108,52 +143,53 @@ void seguirLinha()
     {
         lopenFrente(500);
     }
+    //stopCnls();
 }
 
 void lopenFrente(int time)
 {
-    mEsq1.Write(velReta);
+    mEsq1.Write(PinValue.High);
     mEsq2.Write(PinValue.Low);
-    mDir1.Write(velReta);
+    mDir1.Write(PinValue.High);
     mDir2.Write(PinValue.Low);
     Thread.Sleep(time);
-    parar();
+    //parar();
 }
 
 void lopenTras(int time)
 {
     mEsq1.Write(PinValue.Low);
-    mEsq2.Write(velReta);
+    mEsq2.Write(PinValue.High);
     mDir1.Write(PinValue.Low);
-    mDir2.Write(velReta);
+    mDir2.Write(PinValue.High);
     Thread.Sleep(time);
-    parar();
+    //parar();
 }
 
 void lopenDir(int time)
 {
-    mEsq1.Write(velCurva);
+    mEsq1.Write(PinValue.High);
     mEsq2.Write(PinValue.Low);
     mDir1.Write(PinValue.Low);
-    mDir2.Write(velCurva);
+    mDir2.Write(PinValue.High);
     Thread.Sleep(time);
-    parar();
+    //parar();
 }
 
 void lopenEsq(int time)
 {
     mEsq1.Write(PinValue.Low);
-    mEsq2.Write(velCurva);
-    mDir1.Write(velCurva);
+    mEsq2.Write(PinValue.High);
+    mDir1.Write(PinValue.High);
     mDir2.Write(PinValue.Low);
     Thread.Sleep(time);
-    parar();
+    //parar();
 }
 
-void parar()
-{
-    mEsq1.Write(PinValue.Low);
-    mEsq2.Write(PinValue.Low);
-    mDir1.Write(PinValue.Low);
-    mDir2.Write(PinValue.Low);
-}
+//void parar()
+//{
+//    mEsq1.DutyCycle = 0;
+//    mEsq2.DutyCycle = 0;
+//    mDir1.DutyCycle = 0;
+//    mDir2.DutyCycle = 0;
+//}

@@ -28,20 +28,18 @@ double velReta = 0.4, velCurva = 0.50;
 int corte = 2000;
 
 //Array para armazenar as leituras dos sensores
-string[] ls = new string[3];
-bool[] polaridades = new bool[3];//Polaridades dos sensores, 0 maior número indica branco, 1 maior número indica preto
 string estado = "!", estadoAnterior = "!";
 
-polaridades[0] = false;
-polaridades[1] = true;
-polaridades[2] = false;
+bool[] polaridades = { false, false, false };//Polaridades dos sensores, 0 maior número indica branco, 1 maior número indica preto
+
+sensorCor[] sensoresCor = { new sensorCor(polaridades[0], definirCor(sensorEsq.ReadValue(), 0)), new sensorCor(polaridades[0], definirCor(sensorCen.ReadValue(), 1)), new sensorCor(polaridades[0], definirCor(sensorDir.ReadValue(), 2)) };
 
 while (true)
 {
     if (mEsq1 != null && mEsq2 != null && mDir1 != null && mDir2 != null)
     {
-      lerSensores();
-      seguirLinha();
+        lerSensores();
+        seguirLinha();
     }
     else
     {
@@ -70,13 +68,13 @@ while (true)
 
 void lerSensores()
 {
-    ls[0] = definirCor(sensorEsq.ReadValue(), 0);
-    ls[1] = definirCor(sensorCen.ReadValue(), 1);
-    ls[2] = definirCor(sensorDir.ReadValue(), 2);
+    sensoresCor[0] = new sensorCor(polaridades[0], definirCor(sensorEsq.ReadValue(), 0));
+    sensoresCor[1] = new sensorCor(polaridades[1], definirCor(sensorCen.ReadValue(), 1));
+    sensoresCor[2] = new sensorCor(polaridades[2], definirCor(sensorDir.ReadValue(), 2));
 
     estado = definirEstado();
 
-    Console.WriteLine($"Esquerda: {ls[0]} | Centro: {ls[1]} | Direita: {ls[2]} | Estado: {estado}");
+    Console.WriteLine($"Esquerda: {sensoresCor[0].retorno} | Centro: {sensoresCor[1].retorno} | Direita: {sensoresCor[2].retorno} | Estado: {estado}");
 }
 
 string definirCor(int input, int indice)
@@ -95,23 +93,20 @@ string definirCor(int input, int indice)
 
 string definirEstado()
 {
-    if (ls[0] == "Preto" && ls[1] == "Preto" && ls[2] == "Preto")
+    if (sensoresCor[0].retorno == "Preto" && sensoresCor[1].retorno == "Preto" && sensoresCor[2].retorno == "Preto")
     {
         return "cruz";
     }
-    else if (ls[1] == "Branco")
+    else if (sensoresCor[0].retorno == "Branco" && sensoresCor[1].retorno == "Branco" && sensoresCor[2].retorno == "Branco")
     {
-        if (ls[0] == "Preto") return "corrigirEsq";
-        else if (ls[2] == "Preto") return "corrigirDir";
-        else return "gap";
+        return "gap";
     }
-    else if (ls[1] == "Preto")
+    else if (sensoresCor[1].retorno == "Preto")
     {
-        if (ls[0] == "Preto") return "90Esq";
-        else if (ls[2] == "Preto") return "90Dir";
-        else return "cruz";
+        if (sensoresCor[0].retorno == "Preto") return "90Esq";
+        else if (sensoresCor[2].retorno == "Preto") return "90Dir";
+        else return "reta";
     }
-
     else return estadoAnterior;
     estadoAnterior = estado;
 }
@@ -186,10 +181,21 @@ void lopenEsq(int time)
     //parar();
 }
 
-//void parar()
-//{
-//    mEsq1.DutyCycle = 0;
-//    mEsq2.DutyCycle = 0;
-//    mDir1.DutyCycle = 0;
-//    mDir2.DutyCycle = 0;
-//}
+void parar()
+{
+    mEsq1.Write(PinValue.Low);
+    mEsq2.Write(PinValue.Low);
+    mDir1.Write(PinValue.Low);
+    mDir2.Write(PinValue.Low);
+}
+
+struct sensorCor
+{
+    public bool polaridade;
+    public string retorno;
+    public sensorCor(bool p, string r)
+    {
+        polaridade = p;
+        retorno = r;
+    }
+}
